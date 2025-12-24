@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [ "mainf" ]
+  pull_request:
+    branches: [ "mainf" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache: true
+
+      - name: Build backend
+        run: |
+          cd backend
+          go mod download
+          go build -v -o main .
+
+      - name: Run tests
+        run: |
+          cd backend
+          go test -v ./...
+
+      - name: Build and run Docker image
+        run: |
+          cd backend
+          docker build -t myapp .
+          docker run -d --name myapp_container -p 3000:3000 myapp
+          sleep 5
+          # Проверим, что контейнер жив
+          docker ps -f name=myapp_container
+          # (Можно добавить curl localhost:3000/health для проверки)
